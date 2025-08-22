@@ -59,16 +59,14 @@ app.get('/data', async (req, res) => {
 
 
 
-// --- Create or Set PIN (only once) ---
+// --- Set PIN (only if not already set) ---
 app.post("/set-pin", async (req, res) => {
   try {
     const { pin } = req.body;
-
     if (!pin || pin.length !== 5) {
       return res.status(400).json({ error: "PIN must be exactly 5 digits" });
     }
 
-    // check if PIN already exists
     const existing = await Pin.findOne();
     if (existing) {
       return res
@@ -78,7 +76,7 @@ app.post("/set-pin", async (req, res) => {
 
     const newPin = new Pin({ pin });
     await newPin.save();
-    res.json({ message: "PIN set successfully" });
+    res.json({ message: "PIN set successfully", pin: newPin });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
@@ -88,10 +86,9 @@ app.post("/set-pin", async (req, res) => {
 // --- Update PIN ---
 app.put("/update-pin", async (req, res) => {
   try {
-    const { oldPin, newPin } = req.body;
-
-    if (!newPin || newPin.length !== 5) {
-      return res.status(400).json({ error: "New PIN must be exactly 5 digits" });
+    const { pin } = req.body;
+    if (!pin || pin.length !== 5) {
+      return res.status(400).json({ error: "PIN must be exactly 5 digits" });
     }
 
     const pinDoc = await Pin.findOne();
@@ -99,20 +96,16 @@ app.put("/update-pin", async (req, res) => {
       return res.status(404).json({ error: "No PIN set yet" });
     }
 
-    if (pinDoc.pin !== oldPin) {
-      return res.status(403).json({ error: "Old PIN is incorrect" });
-    }
-
-    pinDoc.pin = newPin;
+    pinDoc.pin = pin;
     await pinDoc.save();
-    res.json({ message: "PIN updated successfully" });
+    res.json({ message: "PIN updated successfully", pin: pinDoc });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// --- Get Current PIN (optional, for debugging) ---
+// --- Optional: Get Current PIN ---
 app.get("/get-pin", async (req, res) => {
   try {
     const pinDoc = await Pin.findOne();
@@ -122,7 +115,6 @@ app.get("/get-pin", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 
 
 
