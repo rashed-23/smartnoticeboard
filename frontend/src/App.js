@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
 // Get base URL from .env
 const baseURL = process.env.REACT_APP_BASE_URL;
 

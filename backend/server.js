@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+const Pin = require("./models/Pin");
+
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -53,6 +56,75 @@ app.get('/data', async (req, res) => {
     res.status(500).json({ status: "error", message: err.message });
   }
 });
+
+
+
+// --- Create or Set PIN (only once) ---
+app.post("/set-pin", async (req, res) => {
+  try {
+    const { pin } = req.body;
+
+    if (!pin || pin.length !== 5) {
+      return res.status(400).json({ error: "PIN must be exactly 5 digits" });
+    }
+
+    // check if PIN already exists
+    const existing = await Pin.findOne();
+    if (existing) {
+      return res
+        .status(400)
+        .json({ error: "PIN already set. Use /update-pin to change it." });
+    }
+
+    const newPin = new Pin({ pin });
+    await newPin.save();
+    res.json({ message: "PIN set successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// --- Update PIN ---
+app.put("/update-pin", async (req, res) => {
+  try {
+    const { oldPin, newPin } = req.body;
+
+    if (!newPin || newPin.length !== 5) {
+      return res.status(400).json({ error: "New PIN must be exactly 5 digits" });
+    }
+
+    const pinDoc = await Pin.findOne();
+    if (!pinDoc) {
+      return res.status(404).json({ error: "No PIN set yet" });
+    }
+
+    if (pinDoc.pin !== oldPin) {
+      return res.status(403).json({ error: "Old PIN is incorrect" });
+    }
+
+    pinDoc.pin = newPin;
+    await pinDoc.save();
+    res.json({ message: "PIN updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// --- Get Current PIN (optional, for debugging) ---
+app.get("/get-pin", async (req, res) => {
+  try {
+    const pinDoc = await Pin.findOne();
+    if (!pinDoc) return res.status(404).json({ error: "No PIN set" });
+    res.json({ pin: pinDoc.pin });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+
 
 
 app.listen(PORT, () => {
