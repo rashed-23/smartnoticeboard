@@ -63,7 +63,7 @@ app.get('/data', async (req, res) => {
 app.post("/set-pin", async (req, res) => {
   try {
     const { pin } = req.body;
-    if (!pin || pin.length !== 5) {
+    if ( pin.length !== 5) {
       return res.status(400).json({ error: "PIN must be exactly 5 digits" });
     }
 
