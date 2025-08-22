@@ -83,12 +83,13 @@ app.post("/set-pin", async (req, res) => {
   }
 });
 
-// --- Update PIN ---
+// --- Update PIN (check old PIN first) ---
 app.put("/update-pin", async (req, res) => {
   try {
-    const { pin } = req.body;
-    if (!pin || pin.length !== 5) {
-      return res.status(400).json({ error: "PIN must be exactly 5 digits" });
+    const { oldPin, newPin } = req.body;
+
+    if (!newPin || newPin.length !== 5) {
+      return res.status(400).json({ error: "New PIN must be exactly 5 digits" });
     }
 
     const pinDoc = await Pin.findOne();
@@ -96,14 +97,19 @@ app.put("/update-pin", async (req, res) => {
       return res.status(404).json({ error: "No PIN set yet" });
     }
 
-    pinDoc.pin = pin;
+    if (pinDoc.pin !== oldPin) {
+      return res.status(403).json({ error: "Old PIN is incorrect" });
+    }
+
+    pinDoc.pin = newPin;
     await pinDoc.save();
-    res.json({ message: "PIN updated successfully", pin: pinDoc });
+    res.json({ message: "PIN updated successfully", pin: pinDoc.pin });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 // --- Optional: Get Current PIN ---
 app.get("/get-pin", async (req, res) => {
